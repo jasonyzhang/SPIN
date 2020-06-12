@@ -205,10 +205,14 @@ class Trainer(BaseTrainer):
             opt_betas[update, :] = new_opt_betas[update, :]
             opt_cam_t[update, :] = new_opt_cam_t[update, :]
 
+
             self.fits_dict[(dataset_name, indices.cpu(), rot_angle.cpu(), is_flipped.cpu(), update.cpu())] = (opt_pose.cpu(), opt_betas.cpu())
 
         else:
             update = torch.zeros(batch_size, device=self.device).byte()
+
+        # Replace extreme betas with zero betas
+        opt_betas[(opt_betas.abs() > 3).any(dim=-1)] = 0.
 
         # Replace the optimized parameters with the ground truth parameters, if available
         opt_vertices[has_smpl, :, :] = gt_vertices[has_smpl, :, :]
@@ -251,7 +255,7 @@ class Trainer(BaseTrainer):
         loss = self.options.shape_loss_weight * loss_shape +\
                self.options.keypoint_loss_weight * loss_keypoints +\
                self.options.keypoint_loss_weight * loss_keypoints_3d +\
-               loss_regr_pose + self.options.beta_loss_weight * loss_regr_betas +\
+               self.options.pose_loss_weight * loss_regr_pose + self.options.beta_loss_weight * loss_regr_betas +\
                ((torch.exp(-pred_camera[:,0]*10)) ** 2 ).mean()
         loss *= 60
 

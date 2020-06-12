@@ -9,10 +9,10 @@ ICCV 2019
 
 ## Installation instructions
 We suggest to use the [docker image](https://hub.docker.com/r/chaneyk/spin) we provide that has all dependencies
-compiled and preinstalled. Alternatively you can create a virtual environment and install all the relevant dependencies as follows:
+compiled and preinstalled. Alternatively you can create a `python3` virtual environment and install all the relevant dependencies as follows:
 
 ```
-virtualenv spin
+virtualenv spin -p python3
 source spin/bin/activate
 pip install -U pip
 pip install -r requirements.txt
@@ -33,7 +33,7 @@ The GMM prior is trained and provided by the original [SMPLify work](http://smpl
 Besides these files, you also need to download the *SMPL* model. You will need the [neutral model](http://smplify.is.tue.mpg.de) for training and running the demo code, while the [male and female models](http://smpl.is.tue.mpg.de) will be necessary for evaluation on the 3DPW dataset. Please go to the websites for the corresponding projects and register to get access to the downloads section. In case you need to convert the models to be compatible with python3, please follow the instructions [here](https://github.com/vchoutas/smplx/tree/master/tools).
 
 ## Final fits
-We also release the improved fits that our method produced at the end of SPIN training. You can download them from [here](http://visiondata.cis.upenn.edu/spin/static_fits.tar.gz). Each .npz file contains the pose and shape parameters of the SMPL model for the training examples, following the order of the training .npz files. For each example, a flag is also included, indicating whether the quality of the fit is acceptable for training (following an automatic heuristic based on the joints reprojection error).
+We also release the improved fits that our method produced at the end of SPIN training. You can download them from [here](http://visiondata.cis.upenn.edu/spin/spin_fits.tar.gz). Each .npz file contains the pose and shape parameters of the SMPL model for the training examples, following the order of the training .npz files. For each example, a flag is also included, indicating whether the quality of the fit is acceptable for training (following an automatic heuristic based on the joints reprojection error).
 
 ## Run demo code
 To run our method, you need a bounding box around the person. The person needs to be centered inside the bounding box and the bounding box should be relatively tight. You can either supply the bounding box directly or provide an [OpenPose](https://github.com/CMU-Perceptual-Computing-Lab/openpose) detection file. In the latter case we infer the bounding box from the detections.
@@ -53,7 +53,7 @@ python3 demo.py --checkpoint=data/model_checkpoint.pt --img=examples/im1010.jpg 
 ```
 Example with cropped and centered image
 ```
-python3 demo.py --checkpoint=data/model_checkpoint.ptt --img=examples/im1010.jpg
+python3 demo.py --checkpoint=data/model_checkpoint.pt --img=examples/im1010.jpg
 ```
 
 Running the previous command will save the results in ```examples/im1010_{shape,shape_side}.png```. The file  ```im1010_shape.png``` shows the overlayed reconstruction of the model on the image.  We also render a side view, saved in ```im1010_shape_side.png```.
