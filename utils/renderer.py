@@ -13,6 +13,7 @@ class Renderer:
     """
     def __init__(self, focal_length=5000, img_res=224, faces=None):
         self.renderer = pyrender.OffscreenRenderer(viewport_width=img_res,
+        # self.renderer = pyrender.Renderer(viewport_width=img_res,
                                        viewport_height=img_res,
                                        point_size=1.0)
         self.focal_length = focal_length

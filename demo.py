@@ -26,14 +26,17 @@ Running the previous command will save the results in ```examples/im1010_{shape,
 
 import torch
 from torchvision.transforms import Normalize
+import matplotlib.pyplot as plt
 import numpy as np
 import cv2
 import argparse
 import json
+import ipdb
 
 from models import hmr, SMPL
 from utils.imutils import crop
-from utils.renderer import Renderer
+# from utils.renderer import Renderer
+from utils.renderer2 import VisRenderer
 import config
 import constants
 
@@ -97,9 +100,9 @@ def process_image(img_file, bbox_file, openpose_file, input_res=224):
 
 if __name__ == '__main__':
     args = parser.parse_args()
-    
+
     device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-    
+
     # Load pretrained model
     model = hmr(config.SMPL_MEAN_PARAMS).to(device)
     checkpoint = torch.load(args.checkpoint)
@@ -112,7 +115,8 @@ if __name__ == '__main__':
     model.eval()
 
     # Setup renderer for visualization
-    renderer = Renderer(focal_length=constants.FOCAL_LENGTH, img_res=constants.IMG_RES, faces=smpl.faces)
+    # renderer = Renderer(focal_length=constants.FOCAL_LENGTH, img_res=constants.IMG_RES, faces=smpl.faces)
+    renderer = VisRenderer(224)
 
 
     # Preprocess input image and generate predictions
@@ -121,27 +125,27 @@ if __name__ == '__main__':
         pred_rotmat, pred_betas, pred_camera = model(norm_img.to(device))
         pred_output = smpl(betas=pred_betas, body_pose=pred_rotmat[:,1:], global_orient=pred_rotmat[:,0].unsqueeze(1), pose2rot=False)
         pred_vertices = pred_output.vertices
-        
+        cam = pred_camera.cpu().numpy()
+
     # Calculate camera parameters for rendering
-    camera_translation = torch.stack([pred_camera[:,1], pred_camera[:,2], 2*constants.FOCAL_LENGTH/(constants.IMG_RES * pred_camera[:,0] +1e-9)],dim=-1)
-    camera_translation = camera_translation[0].cpu().numpy()
+    # camera_translation = torch.stack([pred_camera[:,1], pred_camera[:,2], 2*constants.FOCAL_LENGTH/(constants.IMG_RES * pred_camera[:,0] +1e-9)],dim=-1)
+    # camera_translation = camera_translation[0].cpu().numpy()
     pred_vertices = pred_vertices[0].cpu().numpy()
     img = img.permute(1,2,0).cpu().numpy()
 
-    
     # Render parametric shape
-    img_shape = renderer(pred_vertices, camera_translation, img)
-    
+    img_shape = renderer(verts=pred_vertices, cam=cam, img=img)
+
     # Render side views
-    aroundy = cv2.Rodrigues(np.array([0, np.radians(90.), 0]))[0]
-    center = pred_vertices.mean(axis=0)
-    rot_vertices = np.dot((pred_vertices - center), aroundy) + center
-    
+    # aroundy = cv2.Rodrigues(np.array([0, np.radians(90.), 0]))[0]
+    # center = pred_vertices.mean(axis=0)
+    # rot_vertices = np.dot((pred_vertices - center), aroundy) + center
+
     # Render non-parametric shape
-    img_shape_side = renderer(rot_vertices, camera_translation, np.ones_like(img))
+    img_shape_side = renderer.rotated(verts=pred_vertices, deg=-90)
 
     outfile = args.img.split('.')[0] if args.outfile is None else args.outfile
 
     # Save reconstructions
-    cv2.imwrite(outfile + '_shape.png', 255 * img_shape[:,:,::-1])
-    cv2.imwrite(outfile + '_shape_side.png', 255 * img_shape_side[:,:,::-1])
+    plt.imsave(outfile + '_shape.png', img_shape)
+    plt.imsave(outfile + '_shape_side.png', img_shape_side)
